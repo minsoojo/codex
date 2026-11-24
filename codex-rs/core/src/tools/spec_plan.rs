@@ -669,6 +669,14 @@ fn spec_for_model_request(
     code_mode_tool_names: &BTreeMap<String, ToolName>,
     spec: ToolSpec,
 ) -> ToolSpec {
+    // The OpenRouter Responses endpoint accepts ordinary function declarations.
+    if std::env::var_os("FEDOPS_ASK").is_some()
+        && tool_name.namespace.as_deref() == Some("mcp__repository")
+        && let ToolSpec::Namespace(namespace) = &spec
+        && let [ResponsesApiNamespaceTool::Function(function)] = namespace.tools.as_slice()
+    {
+        return ToolSpec::Function(function.clone());
+    }
     let tool_mode = effective_tool_mode(turn_context, model_info);
     if matches!(tool_mode, ToolMode::CodeMode | ToolMode::CodeModeOnly)
         && exposure.is_available_in_code_mode()

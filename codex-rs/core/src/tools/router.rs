@@ -286,6 +286,13 @@ impl ToolRouter {
         &self,
         mut item: ResponseItem,
     ) -> Result<Option<ToolCall>, FunctionCallError> {
+        if std::env::var_os("FEDOPS_ASK").is_some()
+            && let ResponseItem::FunctionCall { name, namespace, .. } = &mut item
+            && namespace.is_none()
+            && matches!(name.as_str(), "Grep" | "Read")
+        {
+            *namespace = Some("mcp__repository".to_string());
+        }
         match item {
             ResponseItem::FunctionCall {
                 ref name,
