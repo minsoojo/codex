@@ -97,7 +97,17 @@ impl<T: HttpTransport> ResponsesClient<T> {
             tool_results,
             turn_state,
         } = options;
-        let body = EncodedJsonBody::encode(&request)
+        let body = if std::env::var_os("FEDOPS_ASK").is_some() {
+            #[derive(serde::Serialize)]
+            struct AskRequest<'a> {
+                #[serde(flatten)]
+                request: &'a ResponsesApiRequest,
+                max_output_tokens: usize,
+            }
+            EncodedJsonBody::encode(&AskRequest { request: &request, max_output_tokens: 512 })
+        } else {
+            EncodedJsonBody::encode(&request)
+        }
             .map_err(|e| ApiError::Stream(format!("failed to encode responses request: {e}")))?;
 
         on_encoded(body.shared_bytes());
