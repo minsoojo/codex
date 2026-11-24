@@ -150,8 +150,10 @@ impl<T: HttpTransport> EndpointSession<T> {
                         use std::sync::atomic::{AtomicUsize, Ordering};
                         static REQUESTS: AtomicUsize = AtomicUsize::new(0);
                         let round = REQUESTS.fetch_add(1, Ordering::Relaxed) + 1;
-                        if round > 8 {
-                            return Err(TransportError::Build("FedOps ask reached its 8-request limit".into()));
+                        let limit = std::env::var("FEDOPS_REQUEST_LIMIT").ok()
+                            .and_then(|value| value.parse::<usize>().ok()).unwrap_or(8).min(8);
+                        if round > limit {
+                            return Err(TransportError::Build(format!("FedOps ask reached its {limit}-request limit")));
                         }
                         println!("{}", serde_json::json!({"type":"fedops.request","round":round}));
                     }
