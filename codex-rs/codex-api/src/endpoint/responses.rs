@@ -104,7 +104,12 @@ impl<T: HttpTransport> ResponsesClient<T> {
                 request: &'a ResponsesApiRequest,
                 max_output_tokens: usize,
             }
-            EncodedJsonBody::encode(&AskRequest { request: &request, max_output_tokens: 512 })
+            // Reasoning tokens also count toward the free router's output limit.
+            let free = request.model == "openrouter/free" || request.model.ends_with(":free");
+            EncodedJsonBody::encode(&AskRequest {
+                request: &request,
+                max_output_tokens: if free { 4096 } else { 1024 },
+            })
         } else {
             EncodedJsonBody::encode(&request)
         }
