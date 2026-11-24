@@ -145,6 +145,16 @@ impl<T: HttpTransport> EndpointSession<T> {
                 let transport = &self.transport;
                 async move {
                     let req = auth.apply_auth(req).await.map_err(TransportError::from)?;
+                    if path == "/responses" && std::env::var_os("FEDOPS_ASK").is_some() {
+                        // One process owns one FedOps question. Count even transport retries.
+                        use std::sync::atomic::{AtomicUsize, Ordering};
+                        static REQUESTS: AtomicUsize = AtomicUsize::new(0);
+                        let round = REQUESTS.fetch_add(1, Ordering::Relaxed) + 1;
+                        if round > 8 {
+                            return Err(TransportError::Build("FedOps ask reached its 8-request limit".into()));
+                        }
+                        println!("{}", serde_json::json!({"type":"fedops.request","round":round}));
+                    }
                     transport.stream(req).await
                 }
             },

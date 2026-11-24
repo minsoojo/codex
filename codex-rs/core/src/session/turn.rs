@@ -3389,6 +3389,15 @@ async fn try_run_sampling_request(
             .session_telemetry
             .record_responses(&handle_responses, &event);
 
+        if std::env::var_os("FEDOPS_ASK").is_some() {
+            match &event {
+                ResponseEvent::OutputItemDone(item @ (ResponseItem::Message { .. } | ResponseItem::FunctionCall { .. })) => {
+                    println!("{}", serde_json::json!({"type":"fedops.output","item":item}));
+                }
+                ResponseEvent::Completed { .. } => println!(r#"{{"type":"fedops.response"}}"#),
+                _ => {}
+            }
+        }
         match event {
             ResponseEvent::Created { response_id } => {
                 answer_moderation = None;

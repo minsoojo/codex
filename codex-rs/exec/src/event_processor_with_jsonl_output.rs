@@ -207,6 +207,7 @@ impl EventProcessorWithJsonOutput {
                 }),
             }),
             ThreadItemPayload::McpToolCall {
+                id,
                 server,
                 tool,
                 status,
@@ -215,7 +216,7 @@ impl EventProcessorWithJsonOutput {
                 error,
                 ..
             } => Some(ExecThreadItem {
-                id: make_id(),
+                id: if std::env::var_os("FEDOPS_ASK").is_some() { id } else { make_id() },
                 details: ThreadItemDetails::McpToolCall(McpToolCallItem {
                     server,
                     tool,

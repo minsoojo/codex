@@ -1069,6 +1069,14 @@ impl Session {
         let tool_policy = thread_extension_init
             .get::<codex_extension_api::ToolPolicy>()
             .unwrap_or_else(|| {
+                if std::env::var_os("FEDOPS_ASK").is_some() {
+                    return Arc::new(codex_extension_api::ToolPolicy {
+                        allowed_tools: Some(["Grep", "Read"].into_iter().map(|name|
+                            codex_extension_api::ToolName::namespaced("mcp__repository", name)
+                        ).collect()),
+                        ..Default::default()
+                    });
+                }
                 // Older reviewer rollouts predate the explicit startup policy.
                 if crate::guardian::is_basic_session_source(&session_configuration.session_source) {
                     Arc::new(codex_guardian_reviewer::reviewer_tool_policy())
